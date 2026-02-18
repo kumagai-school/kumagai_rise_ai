@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: rise-stock-app
+    env: python
+    buildCommand: ""
+    startCommand: streamlit run app_rise.py --server.port $PORT --server.enableCORS false
