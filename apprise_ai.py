@@ -97,7 +97,7 @@ def build_drawdown_ranking():
     df_u["current"] = pd.to_numeric(df_u["current"], errors="coerce")
 
     # 上昇率・下落率
-    df_u["rise_rate"] = (df_u["high"] / df_u["low"] - 1.0)
+    df_u["rise_rate"] = (df_u["high"] / df_u["low"])
     df_u["drawdown_from_high"] = (df_u["high"] - df_u["current"]) / df_u["high"]
 
     # 表示用整形
@@ -135,15 +135,21 @@ def build_drawdown_ranking():
 # ▼ ここで表示（好きな場所に置いてOK）
 st.markdown("## 高値からの下落率ランキング（本日〜3日前までの全銘柄）")
 rank_df = build_drawdown_ranking()
+
 if rank_df.empty:
     st.info("ランキング対象データがありません。")
 else:
-    # パーセント表示（見やすさ用）
     show = rank_df.copy()
-    show["上昇率"] = (show["上昇率"] * 100).round(1).astype(str) + "%"
-    show["高値からの下落率"] = (show["高値からの下落率"] * 100).round(1).astype(str) + "%"
 
-    st.dataframe(show, use_container_width=True, hide_index=True)
+    # 上昇率を「◯◯倍（小数1位）」に変換
+    # ※ build_drawdown_ranking() 内の「上昇率」は、後述の修正で倍率が入る前提
+    show["上昇率"] = show["上昇率"].astype(float).map(lambda x: f"{x:.1f}倍" if pd.notna(x) else "")
+
+    # 下落率はパーセントのまま
+    show["高値からの下落率"] = (show["高値からの下落率"].astype(float) * 100).round(1).astype(str) + "%"
+
+    # ✅ スクロールなしで全表示
+    st.table(show)
 
 
 st.markdown("""
