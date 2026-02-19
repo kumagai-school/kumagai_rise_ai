@@ -98,10 +98,25 @@ def build_drawdown_ranking():
             df_u[c] = pd.to_numeric(df_u[c], errors="coerce")
     df_u.dropna(subset=["high", "low"], inplace=True)
 
+    # ★ここを追加：codeを正規化（"6961.0" 問題を潰す）
+    df_u["code_key"] = pd.to_numeric(df_u["code"], errors="coerce").astype("Int64").astype(str)
+
     # 現在値（= candle の最新 close）を付与
     cur_map = load_current_price_map()
-    df_u["current"] = df_u["code"].astype(str).map(cur_map)
+    df_u["current"] = df_u["code_key"].map(cur_map)
     df_u["current"] = pd.to_numeric(df_u["current"], errors="coerce")
+
+    # ========= ✅ デバッグ（1回だけ）ここから =========
+    # 欠損の先頭だけ表示（多すぎると画面が重いので head()）
+    missing = df_u[df_u["current"].isna()][["code", "name", "high", "high_date"]].head(30)
+    st.write("現在値が取れない銘柄（先頭30）", missing)
+
+    # 指定コードが辞書に存在するか
+    st.write("cur_map has 6961?", "6961" in cur_map)
+    st.write("cur_map has 8935?", "8935" in cur_map)
+    st.write("cur_map has 9927?", "9927" in cur_map)
+    # ========= ✅ デバッグここまで =========
+
     # 上昇率・下落率
     df_u["rise_rate"] = (df_u["high"] / df_u["low"])
     df_u["drawdown_from_high"] = (df_u["high"] - df_u["current"]) / df_u["high"]
