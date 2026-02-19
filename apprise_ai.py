@@ -156,6 +156,9 @@ else:
     for c in ["安値", "高値", "現在値"]:
         show[c] = pd.to_numeric(show[c], errors="coerce").map(lambda x: f"{x:,.1f}" if pd.notna(x) else "")
 
+    show = show.reset_index(drop=True)
+    show.index = [""] * len(show)
+
     # ✅ スクロールなしで全表示
     st.table(show)
 
