@@ -140,34 +140,24 @@ if rank_df.empty:
     st.info("ランキング対象データがありません。")
 else:
     show = rank_df.copy()
-
+    
     # 上昇率を「◯◯倍（小数1位）」に変換
     # ※ build_drawdown_ranking() 内の「上昇率」は、後述の修正で倍率が入る前提
+
     show["上昇率"] = show["上昇率"].astype(float).map(lambda x: f"{x:.1f}倍" if pd.notna(x) else "")
 
     # 下落率はパーセントのまま
     show["高値からの下落率"] = (show["高値からの下落率"].astype(float) * 100).round(1).astype(str) + "%"
 
+    # ▼ 追加：順位（1からの連番）
+    show.insert(0, "順位", range(1, len(show) + 1))
+
+    # ▼ 追加：価格系を小数1位に固定（見た目を確実にするため文字列化）
+    for c in ["安値", "高値", "現在値"]:
+        show[c] = pd.to_numeric(show[c], errors="coerce").map(lambda x: f"{x:,.1f}" if pd.notna(x) else "")
+
     # ✅ スクロールなしで全表示
     st.table(show)
-
-
-st.markdown("""
-<div style='
-    border: 1px solid red;
-    background-color: #ffffff;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    color: #b30000;
-    margin-bottom: 20px;
-    line-height: 1.6em;
-'>
-<p>※ピックアップチャートの銘柄については、あくまで「ルール1」銘柄のレッスンとなります。</p>
-<p>※特定の取引を推奨するものではなく、銘柄の助言ではございません。</p>
-<p>※本サービスは利益を保証するものではなく、投資にはリスクが伴います。投資の際は自己責任でよろしくお願いいたします。</p>
-</div>
-""", unsafe_allow_html=True)
 
 
 st.markdown("""
