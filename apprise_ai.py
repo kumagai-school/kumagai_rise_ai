@@ -60,19 +60,25 @@ def load_highlow_multi(sources):
     return df_all
 
 @st.cache_data(ttl=1800)
-def load_current_close_from_candle(code: str):
-    """現在値の代用：candle API の最新 close（= 昨日までの日足になる想定）"""
+def load_current_price_map():
+    """
+    現在値は RealData の current を使う（API側の設計と一致）
+    /api/highlow/batch から code->current_price の辞書を作る
+    """
     try:
-        candle_url = "https://app.kumagai-stock.com/api/candle"
-        resp = requests.get(candle_url, params={"code": code}, timeout=10)
+        url = "https://app.kumagai-stock.com/api/highlow/batch"
+        resp = requests.get(url, timeout=30)
         resp.raise_for_status()
-        chart_data = resp.json().get("data", [])
-        if not chart_data:
-            return None
-        last = chart_data[-1]
-        return float(last.get("close")) if last.get("close") is not None else None
+        items = resp.json()  # list[{code, current_price, ...}]
+        m = {}
+        for it in items:
+            c = str(it.get("code", "")).strip()
+            cp = it.get("current_price", None)
+            if c != "" and cp is not None:
+                m[c] = float(cp)
+        return m
     except Exception:
-        return None
+        return {}
 
 def build_drawdown_ranking():
     df_all = load_highlow_multi(["today", "yesterday", "target2day", "target3day"])
@@ -93,9 +99,9 @@ def build_drawdown_ranking():
     df_u.dropna(subset=["high", "low"], inplace=True)
 
     # 現在値（= candle の最新 close）を付与
-    df_u["current"] = df_u["code"].astype(str).apply(load_current_close_from_candle)
+    cur_map = load_current_price_map()
+    df_u["current"] = df_u["code"].astype(str).map(cur_map)
     df_u["current"] = pd.to_numeric(df_u["current"], errors="coerce")
-
     # 上昇率・下落率
     df_u["rise_rate"] = (df_u["high"] / df_u["low"])
     df_u["drawdown_from_high"] = (df_u["high"] - df_u["current"]) / df_u["high"]
