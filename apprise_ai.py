@@ -38,7 +38,7 @@ def load_data(source):
         return pd.DataFrame()
 
 # -------------------------------------------------------------
-# ✅ 本日〜3日前までをまとめて「高値からの下落率」ランキング表を作る
+# ✅ 本日〜3日前までをまとめて「上げ幅に対する下落率」ランキング表を作る
 # -------------------------------------------------------------
 @st.cache_data(ttl=1800)
 def load_highlow_multi(sources):
@@ -127,8 +127,10 @@ def build_drawdown_ranking():
         df_u["current"] = pd.to_numeric(df_u["current"], errors="coerce")
 
     # 上昇率・下落率
+    df_u["rise_rate"] = df_u["high"] / df_u["low"]
+
+    # 上げ幅に対する下落率 = (高値-現在値)/(高値-安値)
     df_u["up_range"] = df_u["high"] - df_u["low"]
-    # 上げ幅に対する下落率（0〜1が基本。>1は安値割れ、<0は高値超え）
     df_u["drawdown_from_high"] = np.where(
         df_u["up_range"] > 0,
         (df_u["high"] - df_u["current"]) / df_u["up_range"],
@@ -167,7 +169,7 @@ def build_drawdown_ranking():
     return out
 
 # ▼ ここで表示（好きな場所に置いてOK）
-st.markdown("## 高値からの下落率ランキング（本日〜3日前までの全銘柄）")
+st.markdown("## 上げ幅に対する下落率ランキング（本日〜3日前までの全銘柄）")
 rank_df = build_drawdown_ranking()
 
 if rank_df.empty:
