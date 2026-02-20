@@ -127,8 +127,7 @@ def build_drawdown_ranking():
 
     # 上昇率・下落率
     df_u["rise_rate"] = (df_u["high"] / df_u["low"])
-    df_u["drawdown_from_high"] = (df_u["high"] - df_u["current"]) / df_u["high"]
-
+    df_u["drawdown_from_high"] = (df_u["high"] - df_u["current"] / (df_u["high"] - df_u["low"]) 
     # 表示用整形
     df_u["low_date"] = df_u["low_date"].dt.strftime("%Y-%m-%d")
     df_u["high_date"] = df_u["high_date"].dt.strftime("%Y-%m-%d")
@@ -156,7 +155,7 @@ def build_drawdown_ranking():
         "high_date": "高値日",
         "rise_rate": "上昇率",
         "current": "現在値",
-        "drawdown_from_high": "高値からの下落率"
+        "drawdown_from_high": "上げ幅に対する下落率"
     }, inplace=True)
 
     return out
