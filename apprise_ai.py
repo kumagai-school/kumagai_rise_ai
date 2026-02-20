@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import plotly.graph_objects as go
+import numpy as np
 
 st.set_page_config(page_title="RシステムPRO", layout="wide")
 
@@ -126,8 +127,13 @@ def build_drawdown_ranking():
         df_u["current"] = pd.to_numeric(df_u["current"], errors="coerce")
 
     # 上昇率・下落率
-    df_u["rise_rate"] = (df_u["high"] / df_u["low"])
-    df_u["drawdown_from_high"] = (df_u["high"] - df_u["current"] / (df_u["high"] - df_u["low"]) 
+    df_u["up_range"] = df_u["high"] - df_u["low"]
+    # 上げ幅に対する下落率（0〜1が基本。>1は安値割れ、<0は高値超え）
+    df_u["drawdown_from_high"] = np.where(
+        df_u["up_range"] > 0,
+        (df_u["high"] - df_u["current"]) / df_u["up_range"],
+        np.nan
+    )
     # 表示用整形
     df_u["low_date"] = df_u["low_date"].dt.strftime("%Y-%m-%d")
     df_u["high_date"] = df_u["high_date"].dt.strftime("%Y-%m-%d")
@@ -175,7 +181,9 @@ else:
     show["上昇率"] = show["上昇率"].astype(float).map(lambda x: f"{x:.1f}倍" if pd.notna(x) else "")
 
     # 下落率はパーセントのまま
-    show["高値からの下落率"] = (show["高値からの下落率"].astype(float) * 100).round(1).astype(str) + "%"
+    show["上げ幅に対する下落率"] = pd.to_numeric(show["上げ幅に対する下落率"], errors="coerce").apply(
+        lambda x: f"{x*100:.1f}%" if pd.notna(x) else ""
+    )
 
     # ▼ 追加：順位（1からの連番）
     show.insert(0, "順位", range(1, len(show) + 1))
